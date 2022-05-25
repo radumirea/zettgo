@@ -145,8 +145,10 @@ func finishDraft() error {
 	if err != nil {
 		return err
 	}
-	computeReferences(DraftDir + selection)
-	return nil
+	if err := computeReferences(DraftDir + selection); err != nil {
+		return err
+	}
+	return os.Rename(DraftDir + selection, NoteDir + selection)
 }
 
 func computeReferences(fileName string) error {

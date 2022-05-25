@@ -111,5 +111,8 @@ func mdToHtml(source, dest string) error {
 	if err := md.Convert([]byte(source), &buf); err != nil {
 		return err
 	}
+	if err := os.MkdirAll(filepath.Dir(dest), 0700); err != nil {
+		return err
+	}
 	return ioutil.WriteFile(dest, buf.Bytes(), 0644)
 }
