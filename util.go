@@ -93,10 +93,6 @@ func incMetaCount() (int, error) {
 	return count, nil
 }
 
-func deleteFile(file string) error {
-	return nil
-}
-
 func mdToHtml(source, dest string) error {
 	md := goldmark.New(
 		goldmark.WithExtensions(extension.GFM),

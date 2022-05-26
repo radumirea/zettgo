@@ -84,48 +84,54 @@ func main() {
 		}, Usage: "zettelkasten note taking tool",
 		Commands: []*cli.Command{
 			{
-				Name:    "new",
-				Aliases: []string{"n"},
+				Name:    "n",
+				Aliases: []string{"new"},
 				Usage:   "start a new draft",
 				Action: func(c *cli.Context) error {
 					return newDraft()
 				},
 			},
 			{
-				Name:    "edit",
-				Aliases: []string{"e"},
+				Name:    "e",
+				Aliases: []string{"edit"},
 				Usage:   "edit draft",
 				Action: func(c *cli.Context) error {
 					return editDraft()
 				},
 			},
 			{
-				Name:    "delete",
-				Aliases: []string{"d"},
+				Name:    "dd",
+				Aliases: []string{"deld"},
 				Usage:   "delete draft",
 				Action: func(c *cli.Context) error {
-					return nil
+					return deleteDraft()
 				},
 			},
 			{
-				Name:    "delete_note",
-				Aliases: []string{"dd"},
+				Name:    "dn",
+				Aliases: []string{"deln"},
 				Usage:   "delete note",
+				ArgsUsage: "[note_id]",
 				Action: func(c *cli.Context) error {
-					return nil
+					if c.NArg() > 0 {
+						return deleteNote(c.Args().First())
+					} else {
+						selection := getUserInput("Input a note id: ")
+						return deleteNote(selection)
+					}
 				},
 			},
 			{
-				Name:    "finish",
-				Aliases: []string{"f"},
+				Name:    "f",
+				Aliases: []string{"finish"},
 				Usage:   "finish draft and convert to note",
 				Action: func(c *cli.Context) error {
 					return finishDraft()
 				},
 			},
 			{
-				Name:    "rewrite",
-				Aliases: []string{"r"},
+				Name:    "r",
+				Aliases: []string{"rewrite"},
 				Usage:   "rewrite note",
 				Action: func(c *cli.Context) error {
 					return nil
@@ -243,7 +249,7 @@ func newDraft() error {
 }
 
 func editDraft() error {
-	selection, err := listDrafts(true, "Select draft to edit:")
+	selection, err := listDrafts(true, "Select draft to edit: ")
 	if err != nil {
 		return err
 	}
@@ -264,6 +270,12 @@ func deleteDraft() error {
 	if err != nil {
 		return err
 	}
-	deleteFile(DraftDir + selection)
-	return nil
+	return os.Remove(DraftDir + selection)
+}
+
+func deleteNote(id string) error {
+	if err := os.Remove(NoteDir + id); err != nil {
+		return err
+	}
+	return os.Remove(NoteDir + id + ".html")
 }
