@@ -134,7 +134,12 @@ func main() {
 				Aliases: []string{"rewrite"},
 				Usage:   "rewrite note",
 				Action: func(c *cli.Context) error {
-					return nil
+					if c.NArg() > 0 {
+						return rewriteNote(c.Args().First())
+					} else {
+						selection := getUserInput("Input a note id: ")
+						return rewriteNote(selection)
+					}
 				},
 			},
 		},
@@ -165,28 +170,28 @@ func computeReferences(fileName string) error {
 	note := string(noteBytes)
 	noteId := strings.TrimSuffix(filepath.Base(fileName), filepath.Ext(fileName))
 	title, _ := getTitleFromDraft(fileName)
-	links := linkRegex.FindStringSubmatch(note)
+	links := linkRegex.FindAllString(note, -1)
 	extractRegex := regexp.MustCompile(`\[\[.*\|(.*)\]\]`)
 	toMdRegex := regexp.MustCompile(`\[\[([^][]*)\|([^][]*)\]\]`)
 	for _, link := range links {
 		refId := extractRegex.ReplaceAllString(link, `$1`)
 		ref := NoteDir + string(os.PathSeparator) + refId
-		exists := checkFileContent(ref, `\[\[[^][]*\|`+refId+`\]\]`)
+		exists := checkFileContent(ref, `\[\[[^][]*\|`+noteId+`\]\]`)
 		if !exists {
-			if err := appendToFile(fileName, `\n- [[`+title+`|`+noteId+`]]`); err != nil {
+			if err := appendToFile(ref, "\n- [["+title+"|"+noteId+"]]"); err != nil {
 				return err
 			}
-			refBytes, err := ioutil.ReadFile(fileName)
+			refBytes, err := ioutil.ReadFile(ref)
 			if err != nil {
 				return err
 			}
-			mdRef := toMdRegex.ReplaceAllString(string(refBytes), `\[$1\]($2.html)`)
+			mdRef := toMdRegex.ReplaceAllString(string(refBytes), `[$1]($2.html)`)
 			if err := mdToHtml(mdRef, NoteDir+refId+".html"); err != nil {
 				return err
 			}
 		}
 	}
-	mdNote := toMdRegex.ReplaceAllString(note, `\[$1\]($2.html)`)
+	mdNote := toMdRegex.ReplaceAllString(note, `[$1]($2.html)`)
 	return mdToHtml(mdNote, NoteDir+noteId+".html")
 }
 
@@ -278,4 +283,16 @@ func deleteNote(id string) error {
 		return err
 	}
 	return os.Remove(NoteDir + id + ".html")
+}
+
+func rewriteNote(id string) error {
+	if _, err := os.Stat(NoteDir + id); errors.Is(err, os.ErrNotExist) {
+		return errors.New("Note with id " + id + " does not exist")
+	} else if err != nil {
+		return err
+	}
+	if err := openEditor(NoteDir + id); err != nil {
+		return err
+	}
+	return computeReferences(NoteDir + id)
 }
