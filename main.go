@@ -88,16 +88,15 @@ func main() {
 				Aliases: []string{"n"},
 				Usage:   "start a new draft",
 				Action: func(c *cli.Context) error {
-					err := newDraft()
-					return err
+					return newDraft()
 				},
 			},
 			{
 				Name:    "edit",
-				Aliases: []string{"w"},
+				Aliases: []string{"e"},
 				Usage:   "edit draft",
 				Action: func(c *cli.Context) error {
-					return nil
+					return editDraft()
 				},
 			},
 			{
@@ -141,7 +140,7 @@ func main() {
 }
 
 func finishDraft() error {
-	selection, err := listDrafts(true, "Select a draft to finish: ")
+	selection, err := listDrafts(true, "Select draft to finish: ")
 	if err != nil {
 		return err
 	}
@@ -240,17 +239,24 @@ func newDraft() error {
 	if err != nil {
 		return err
 	}
-	openEditor(fileName)
-	return nil
+	return openEditor(fileName)
 }
 
-func openEditor(fileName string) {
+func editDraft() error {
+	selection, err := listDrafts(true, "Select draft to edit:")
+	if err != nil {
+		return err
+	}
+	return openEditor(DraftDir + selection)
+}
+
+func openEditor(fileName string) error {
 	editorPath, _ := exec.LookPath(Editor)
 	cmd := exec.Command(editorPath, fileName)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	_ = cmd.Run()
+	return cmd.Run()
 }
 
 func deleteDraft() error {
