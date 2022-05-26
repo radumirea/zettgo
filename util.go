@@ -58,13 +58,14 @@ func getTitleFromDraft(fileName string) (string, error) {
 }
 
 func checkFileContent(fileName, content string) bool {
+	contentRegex := regexp.MustCompile(content)
 	fileBytes, err := ioutil.ReadFile(fileName)
 	if err != nil {
 		return true
 	}
 	file := string(fileBytes)
-	exists, _ := regexp.MatchString(file, content)
-	return exists
+	match := contentRegex.FindString(file)
+	return match != ""
 }
 
 func appendToFile(fileName, content string) error {
@@ -101,8 +102,12 @@ func mdToHtml(source, dest string) error {
 		),
 		goldmark.WithRendererOptions(
 			html.WithHardWraps(),
+			html.WithUnsafe(),
 		),
 	)
+	if styleBytes, err := os.ReadFile(MetaDir + "style.css"); err == nil {
+		source = "<style>\n" + string(styleBytes) + "\n</style>\n" + source
+	}
 	var buf bytes.Buffer
 	if err := md.Convert([]byte(source), &buf); err != nil {
 		return err

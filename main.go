@@ -175,7 +175,7 @@ func computeReferences(fileName string) error {
 	toMdRegex := regexp.MustCompile(`\[\[([^][]*)\|([^][]*)\]\]`)
 	for _, link := range links {
 		refId := extractRegex.ReplaceAllString(link, `$1`)
-		ref := NoteDir + string(os.PathSeparator) + refId
+		ref := NoteDir + refId
 		exists := checkFileContent(ref, `\[\[[^][]*\|`+noteId+`\]\]`)
 		if !exists {
 			if err := appendToFile(ref, "\n- [["+title+"|"+noteId+"]]"); err != nil {
