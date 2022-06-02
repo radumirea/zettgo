@@ -37,13 +37,13 @@ func finishDraft() error {
 	if err != nil {
 		return err
 	}
-	if err := computeReferences(DraftDir + selection); err != nil {
+	if err := compileReferences(DraftDir + selection); err != nil {
 		return err
 	}
 	return os.Rename(DraftDir+selection, NoteDir+selection)
 }
 
-func computeReferences(fileName string) error {
+func compileReferences(fileName string) error {
 	linkRegex := regexp.MustCompile(`\[\[[^][]*\|([^][]*)\]\]`)
 	noteBytes, err := ioutil.ReadFile(fileName)
 	if err != nil {
@@ -73,12 +73,12 @@ func computeReferences(fileName string) error {
 			}
 		}
 	}
-	mdNote := toMdRegex.ReplaceAllString(note, `[$1]($2.html)`)
+	note = toMdRegex.ReplaceAllString(note, `[$1]($2.html)`)
 	note, err = compileImages(note, noteId)
 	if err != nil {
 		return err
 	}
-	return mdToHtml(mdNote, HtmlDir+noteId+".html")
+	return mdToHtml(note, HtmlDir+noteId+".html")
 }
 
 func compileImages(note string, id string) (string, error) {
@@ -95,7 +95,9 @@ func compileImages(note string, id string) (string, error) {
 			return "", err
 		}
 	}
-	return imgRegex.ReplaceAllString(note, `![](imgs`+string(os.PathSeparator)+id+`-$1)`), nil
+	return imgRegex.ReplaceAllStringFunc(note, func(match string) string {
+		return imageToBase64Tag(ImgDir + id + "-" + match[2:len(match)-2])
+	}), nil
 }
 
 func listDrafts(askInput bool, prompt string) (string, error) {
@@ -197,7 +199,7 @@ func rewriteNote(id string) error {
 	if err := openEditor(NoteDir + id); err != nil {
 		return err
 	}
-	return computeReferences(NoteDir + id)
+	return compileReferences(NoteDir + id)
 }
 
 func recompileAll() error {
@@ -205,7 +207,7 @@ func recompileAll() error {
 	errGroup := errors.New("")
 	for i := 0; i < len(files); i++ {
 		if !files[i].IsDir() {
-			if err := computeReferences(NoteDir + files[i].Name()); err != nil {
+			if err := compileReferences(NoteDir + files[i].Name()); err != nil {
 				errGroup = errors.New(errGroup.Error() + "\n" + err.Error())
 			}
 		}

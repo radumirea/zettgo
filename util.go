@@ -3,9 +3,11 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"os/user"
 	"path/filepath"
@@ -92,6 +94,13 @@ func incMetaCount() (int, error) {
 		return -1, errors.New("Error writing to " + MetaDir + "count")
 	}
 	return count, nil
+}
+
+func imageToBase64Tag(fileName string) string {
+	fileBytes, _:= ioutil.ReadFile(fileName)
+	mimeType := http.DetectContentType(fileBytes)
+	tag := "<img src=\"data:" + mimeType + ";base64," + base64.StdEncoding.EncodeToString(fileBytes) + "\" />"
+	return tag
 }
 
 func mdToHtml(source, dest string) error {
