@@ -191,8 +191,29 @@ func computeReferences(fileName string) error {
 			}
 		}
 	}
+	note, err = compileImages(note, noteId)
+	if err != nil {
+		return err
+	}
 	mdNote := toMdRegex.ReplaceAllString(note, `[$1]($2.html)`)
 	return mdToHtml(mdNote, NoteDir+noteId+".html")
+}
+
+func compileImages(note string, id string) (string, error) {
+	imgRegex := regexp.MustCompile(`\(\(([^\(\)]*)\)\)`)
+	extractRegex := regexp.MustCompile(`\(\((.*)\)\)`)
+	imgRefs := imgRegex.FindAllString(note, -1)
+	for _, imgRef := range imgRefs {
+		imgName := extractRegex.ReplaceAllString(imgRef, `$1`)
+		if _, err := os.Stat(ImgDir + id + "-" + imgName); errors.Is(err, os.ErrNotExist) && imgName != ""{
+			if err := os.Rename(ImgtmpDir + imgName, ImgDir + id + "-" + imgName); err != nil {
+				fmt.Println("Could not move " + imgName + " to image directory")
+			}
+		} else if err != nil {
+			return "", err
+		}
+	}
+	return imgRegex.ReplaceAllString(note, `![](imgs` + string(os.PathSeparator) + id + `-$1)`), nil
 }
 
 func listDrafts(askInput bool, prompt string) (string, error) {
