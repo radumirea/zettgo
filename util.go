@@ -75,8 +75,8 @@ func appendToFile(fileName, content string) error {
 	}
 	defer file.Close()
 	if _, err = file.WriteString(content); err != nil {
-		return err	
-	}	
+		return err
+	}
 	return nil
 }
 

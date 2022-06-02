@@ -11,8 +11,6 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-
-	"github.com/urfave/cli/v2"
 )
 
 var BaseDir string
@@ -22,128 +20,12 @@ var ImgtmpDir string
 var DraftDir string
 var MetaDir string
 var TemplatesDir string
+var HtmlDir string
 var Editor string
 
 func main() {
 	log.SetFlags(log.Flags() &^ (log.Ldate | log.Ltime))
-	app := &cli.App{
-		Name: "zettgo",
-		Before: func(ctx *cli.Context) error {
-			TemplatesDir = formatPath(TemplatesDir)
-			NoteDir = formatPath(NoteDir)
-			ImgDir = formatPath(ImgDir)
-			ImgtmpDir = formatPath(ImgtmpDir)
-			DraftDir = formatPath(DraftDir)
-			MetaDir = formatPath(MetaDir)
-			return nil
-		},
-		Flags: []cli.Flag{
-			&cli.StringFlag{
-				Name:        "editor",
-				Value:       "vim",
-				Usage:       "the text editor",
-				EnvVars:     []string{"EDITOR"},
-				Destination: &Editor,
-			},
-			&cli.StringFlag{
-				Name:        "notedir",
-				Value:       "~/.zettgo/notes",
-				Usage:       "directory for notes",
-				Destination: &NoteDir,
-			},
-			&cli.StringFlag{
-				Name:        "imgdir",
-				Value:       "~/.zettgo/notes/imgs",
-				Usage:       "directory for images",
-				Destination: &ImgDir,
-			},
-			&cli.StringFlag{
-				Name:        "draftdir",
-				Value:       "~/.zettgo/drafts",
-				Usage:       "directory for storing drafts",
-				Destination: &DraftDir,
-			},
-			&cli.StringFlag{
-				Name:        "templatedir",
-				Value:       "~/.zettgo/templates",
-				Usage:       "directory for storing templates",
-				Destination: &TemplatesDir,
-			},
-			&cli.StringFlag{
-				Name:        "configdir",
-				Value:       "~/.zettgo/config",
-				Usage:       "directory for config and metadata files",
-				Destination: &MetaDir,
-			},
-			&cli.StringFlag{
-				Name:        "imgtmp",
-				Value:       "~/.zettgo/imgtmp",
-				Usage:       "location for fetching images on draft finish",
-				Destination: &ImgtmpDir,
-			},
-		}, Usage: "zettelkasten note taking tool",
-		Commands: []*cli.Command{
-			{
-				Name:    "n",
-				Aliases: []string{"new"},
-				Usage:   "start a new draft",
-				Action: func(c *cli.Context) error {
-					return newDraft()
-				},
-			},
-			{
-				Name:    "e",
-				Aliases: []string{"edit"},
-				Usage:   "edit draft",
-				Action: func(c *cli.Context) error {
-					return editDraft()
-				},
-			},
-			{
-				Name:    "dd",
-				Aliases: []string{"deld"},
-				Usage:   "delete draft",
-				Action: func(c *cli.Context) error {
-					return deleteDraft()
-				},
-			},
-			{
-				Name:    "dn",
-				Aliases: []string{"deln"},
-				Usage:   "delete note",
-				ArgsUsage: "[note_id]",
-				Action: func(c *cli.Context) error {
-					if c.NArg() > 0 {
-						return deleteNote(c.Args().First())
-					} else {
-						selection := getUserInput("Input a note id: ")
-						return deleteNote(selection)
-					}
-				},
-			},
-			{
-				Name:    "f",
-				Aliases: []string{"finish"},
-				Usage:   "finish draft and convert to note",
-				Action: func(c *cli.Context) error {
-					return finishDraft()
-				},
-			},
-			{
-				Name:    "r",
-				Aliases: []string{"rewrite"},
-				Usage:   "rewrite note",
-				Action: func(c *cli.Context) error {
-					if c.NArg() > 0 {
-						return rewriteNote(c.Args().First())
-					} else {
-						selection := getUserInput("Input a note id: ")
-						return rewriteNote(selection)
-					}
-				},
-			},
-		},
-	}
+	app := getCliConfig()
 	err := app.Run(os.Args)
 	if err != nil {
 		log.Fatal(err)
@@ -158,7 +40,7 @@ func finishDraft() error {
 	if err := computeReferences(DraftDir + selection); err != nil {
 		return err
 	}
-	return os.Rename(DraftDir + selection, NoteDir + selection)
+	return os.Rename(DraftDir+selection, NoteDir+selection)
 }
 
 func computeReferences(fileName string) error {
@@ -186,17 +68,17 @@ func computeReferences(fileName string) error {
 				return err
 			}
 			mdRef := toMdRegex.ReplaceAllString(string(refBytes), `[$1]($2.html)`)
-			if err := mdToHtml(mdRef, NoteDir+refId+".html"); err != nil {
+			if err := mdToHtml(mdRef, HtmlDir+refId+".html"); err != nil {
 				return err
 			}
 		}
 	}
+	mdNote := toMdRegex.ReplaceAllString(note, `[$1]($2.html)`)
 	note, err = compileImages(note, noteId)
 	if err != nil {
 		return err
 	}
-	mdNote := toMdRegex.ReplaceAllString(note, `[$1]($2.html)`)
-	return mdToHtml(mdNote, NoteDir+noteId+".html")
+	return mdToHtml(mdNote, HtmlDir+noteId+".html")
 }
 
 func compileImages(note string, id string) (string, error) {
@@ -205,19 +87,19 @@ func compileImages(note string, id string) (string, error) {
 	imgRefs := imgRegex.FindAllString(note, -1)
 	for _, imgRef := range imgRefs {
 		imgName := extractRegex.ReplaceAllString(imgRef, `$1`)
-		if _, err := os.Stat(ImgDir + id + "-" + imgName); errors.Is(err, os.ErrNotExist) && imgName != ""{
-			if err := os.Rename(ImgtmpDir + imgName, ImgDir + id + "-" + imgName); err != nil {
+		if _, err := os.Stat(ImgDir + id + "-" + imgName); errors.Is(err, os.ErrNotExist) && imgName != "" {
+			if err := os.Rename(ImgtmpDir+imgName, ImgDir+id+"-"+imgName); err != nil {
 				fmt.Println("Could not move " + imgName + " to image directory")
 			}
 		} else if err != nil {
 			return "", err
 		}
 	}
-	return imgRegex.ReplaceAllString(note, `![](imgs` + string(os.PathSeparator) + id + `-$1)`), nil
+	return imgRegex.ReplaceAllString(note, `![](imgs`+string(os.PathSeparator)+id+`-$1)`), nil
 }
 
 func listDrafts(askInput bool, prompt string) (string, error) {
-	files, _ := ioutil.ReadDir(DraftDir)
+	files, _ := os.ReadDir(DraftDir)
 	fmt.Println("Listing drafts:")
 	if len(files) == 0 {
 		fmt.Println("  No drafts found")
@@ -303,7 +185,7 @@ func deleteNote(id string) error {
 	if err := os.Remove(NoteDir + id); err != nil {
 		return err
 	}
-	return os.Remove(NoteDir + id + ".html")
+	return os.Remove(HtmlDir + id + ".html")
 }
 
 func rewriteNote(id string) error {
@@ -316,4 +198,17 @@ func rewriteNote(id string) error {
 		return err
 	}
 	return computeReferences(NoteDir + id)
+}
+
+func recompileAll() error {
+	files, _ := os.ReadDir(NoteDir)
+	errGroup := errors.New("")
+	for i := 0; i < len(files); i++ {
+		if !files[i].IsDir() {
+			if err := computeReferences(NoteDir + files[i].Name()); err != nil {
+				errGroup = errors.New(errGroup.Error() + "\n" + err.Error())
+			}
+		}
+	}
+	return nil
 }
