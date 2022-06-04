@@ -58,7 +58,7 @@ func compileReferences(fileName string) error {
 	for _, link := range links {
 		refId := extractRegex.ReplaceAllString(link, `$1`)
 		ref := NoteDir + refId
-		exists := checkFileContent(ref, `\[\[[^][]*\|`+noteId+`\]\]`)
+		exists := checkFileContent(ref, `\[\[[^][]*\|`+noteId+`\]\]|@noBacklink`)
 		if !exists {
 			if err := appendToFile(ref, "\n- [["+title+"|"+noteId+"]]"); err != nil {
 				return err
