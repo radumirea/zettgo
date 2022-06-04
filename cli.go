@@ -94,6 +94,15 @@ func getCliConfig() *cli.App{
 				},
 			},
 			{
+				Name:    "l",
+				Aliases: []string{"list"},
+				Usage:   "list drafts",
+				Action: func(c *cli.Context) error {
+					_, err := listDrafts(false, "")
+					return err
+				},
+			},
+			{
 				Name:    "dn",
 				Aliases: []string{"deln"},
 				Usage:   "delete note",

@@ -107,14 +107,6 @@ func listDrafts(askInput bool, prompt string) (string, error) {
 		fmt.Println("  No drafts found")
 		return "", nil
 	}
-	if len(files) == 1 {
-		if title, err := getTitleFromDraft(DraftDir + files[0].Name()); err == nil {
-			fmt.Println("  Only one draft found, defaulting to " + title)
-			return files[0].Name(), nil
-		} else {
-			return "", err
-		}
-	}
 	errGroup := errors.New("")
 	for i := 0; i < len(files); i++ {
 		if title, err := getTitleFromDraft(DraftDir + files[i].Name()); err == nil {

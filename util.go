@@ -87,7 +87,7 @@ func incMetaCount() (int, error) {
 	if err != nil {
 		return -1, errors.New("Corrupted metadata, please regenerate")
 	}
-	count, _ := strconv.Atoi(string(input))
+	count, err := strconv.Atoi(strings.TrimSuffix(string(input), "\n"))
 	count++
 	err = ioutil.WriteFile(MetaDir+"count", []byte(fmt.Sprint(count)), 0644)
 	if err != nil {
