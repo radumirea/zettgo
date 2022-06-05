@@ -22,6 +22,7 @@ var MetaDir string
 var TemplatesDir string
 var HtmlDir string
 var Editor string
+var DraftTemplate string
 
 func main() {
 	log.SetFlags(log.Flags() &^ (log.Ldate | log.Ltime))
@@ -134,7 +135,7 @@ func listDrafts(askInput bool, prompt string) (string, error) {
 }
 
 func newDraft() error {
-	input, err := ioutil.ReadFile(TemplatesDir + "draftTemplate.md")
+	input, err := ioutil.ReadFile(TemplatesDir + DraftTemplate)
 	if err != nil {
 		return err
 	}

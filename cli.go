@@ -67,6 +67,12 @@ func getCliConfig() *cli.App{
 				Usage:       "location for storing html compiled notes",
 				Destination: &HtmlDir,
 			},
+			&cli.StringFlag{
+				Name:        "drafttemplate",
+				Value:       "draftTemplate.md",
+				Usage:       "template to be used when creating a new draft",
+				Destination: &HtmlDir,
+			},
 		}, Usage: "zettelkasten note taking tool",
 		Commands: []*cli.Command{
 			{
