@@ -8,16 +8,23 @@ func getCliConfig() *cli.App{
 	return &cli.App{
 		Name: "zettgo",
 		Before: func(ctx *cli.Context) error {
-			TemplatesDir = formatPath(TemplatesDir)
-			NoteDir = formatPath(NoteDir)
-			ImgDir = formatPath(ImgDir)
-			ImgtmpDir = formatPath(ImgtmpDir)
-			DraftDir = formatPath(DraftDir)
-			MetaDir = formatPath(MetaDir)
-			HtmlDir = formatPath(HtmlDir)
+			BaseDir	= formatPath(BaseDir)
+			TemplatesDir = formatPath(BaseDir + TemplatesDir)
+			NoteDir = formatPath(BaseDir + NoteDir)
+			ImgDir = formatPath(BaseDir + ImgDir)
+			ImgtmpDir = formatPath(BaseDir + ImgtmpDir)
+			DraftDir = formatPath(BaseDir + DraftDir)
+			MetaDir = formatPath(BaseDir + MetaDir)
+			HtmlDir = formatPath(BaseDir + HtmlDir)
 			return nil
 		},
 		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:        "basedir",
+				Value:       "~/.zettgo/",
+				Usage:       "base directory",
+				Destination: &BaseDir,
+			},
 			&cli.StringFlag{
 				Name:        "editor",
 				Value:       "vim",
@@ -27,43 +34,43 @@ func getCliConfig() *cli.App{
 			},
 			&cli.StringFlag{
 				Name:        "notedir",
-				Value:       "~/.zettgo/notes",
+				Value:       "notes",
 				Usage:       "directory for notes",
 				Destination: &NoteDir,
 			},
 			&cli.StringFlag{
 				Name:        "imgdir",
-				Value:       "~/.zettgo/notes/imgs",
+				Value:       "notes/imgs",
 				Usage:       "directory for images",
 				Destination: &ImgDir,
 			},
 			&cli.StringFlag{
 				Name:        "draftdir",
-				Value:       "~/.zettgo/drafts",
+				Value:       "drafts",
 				Usage:       "directory for storing drafts",
 				Destination: &DraftDir,
 			},
 			&cli.StringFlag{
 				Name:        "templatedir",
-				Value:       "~/.zettgo/templates",
+				Value:       "templates",
 				Usage:       "directory for storing templates",
 				Destination: &TemplatesDir,
 			},
 			&cli.StringFlag{
 				Name:        "configdir",
-				Value:       "~/.zettgo/config",
+				Value:       "config",
 				Usage:       "directory for config and metadata files",
 				Destination: &MetaDir,
 			},
 			&cli.StringFlag{
 				Name:        "imgtmp",
-				Value:       "~/.zettgo/imgtmp",
+				Value:       "imgtmp",
 				Usage:       "location for fetching images on draft finish",
 				Destination: &ImgtmpDir,
 			},
 			&cli.StringFlag{
 				Name:        "htmldir",
-				Value:       "~/.zettgo/html",
+				Value:       "html",
 				Usage:       "location for storing html compiled notes",
 				Destination: &HtmlDir,
 			},
@@ -71,7 +78,7 @@ func getCliConfig() *cli.App{
 				Name:        "drafttemplate",
 				Value:       "draftTemplate.md",
 				Usage:       "template to be used when creating a new draft",
-				Destination: &HtmlDir,
+				Destination: &DraftTemplate,
 			},
 		}, Usage: "zettelkasten note taking tool",
 		Commands: []*cli.Command{

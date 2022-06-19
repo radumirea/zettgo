@@ -76,6 +76,7 @@ func compileReferences(fileName string) error {
 	}
 	note = toMdRegex.ReplaceAllString(note, `[$1]($2.html)`)
 	note, err = compileImages(note, noteId)
+	note = compileMacros(note, macros) 
 	if err != nil {
 		return err
 	}
@@ -135,7 +136,8 @@ func listDrafts(askInput bool, prompt string) (string, error) {
 }
 
 func newDraft() error {
-	input, err := ioutil.ReadFile(TemplatesDir + DraftTemplate)
+	template, err := ioutil.ReadFile(TemplatesDir + DraftTemplate)
+	template = []byte(compileMacros(string(template), macros_template))
 	if err != nil {
 		return err
 	}
@@ -144,11 +146,18 @@ func newDraft() error {
 		return err
 	}
 	fileName := DraftDir + fmt.Sprint(draftId)
-	err = ioutil.WriteFile(fileName, input, 0644)
+	err = ioutil.WriteFile(fileName, template, 0644)
 	if err != nil {
 		return err
 	}
 	return openEditor(fileName)
+}
+
+func compileMacros(text string, macros map[string]func() string) string {
+	for k, v := range macros {
+		text = strings.ReplaceAll(text, k, v())
+	}
+	return text
 }
 
 func editDraft() error {
